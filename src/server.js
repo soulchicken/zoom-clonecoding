@@ -21,16 +21,31 @@ const wss = new WebSocket.Server({ server });
 const sockets = [];
 
 wss.on("connection", (socket) => {
+  socket["nickname"] = "anon";
   sockets.push(socket);
   console.log("Connected to Browser ✅");
+
   socket.on("close", () => {
     console.log("Disconnected from Browser 🚫");
   });
 
-  socket.on("message", (message) => {
-    sockets.forEach((aSocket) => {
-      aSocket.send(message.toString("utf8"));
-    });
+  socket.on("message", (msg) => {
+    const massage = JSON.parse(msg);
+    switch (massage.type) {
+      case "new_massage":
+        sockets.forEach((aSocket) => {
+          aSocket.send(`${socket.nickname}: ${massage.payload}`);
+        });
+        break;
+
+      case "nickname":
+        socket["nickname"] = massage.payload;
+        console.log(massage.payload);
+        break;
+
+      default:
+        break;
+    }
   });
   socket.send("hello!!!");
 });

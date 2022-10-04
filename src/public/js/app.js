@@ -4,6 +4,10 @@ const nickForm = document.querySelector("#nick");
 
 const socket = new WebSocket(`ws://${window.location.host}`);
 
+const makeMassage = (type, payload) => {
+  return JSON.stringify({ type, payload });
+};
+
 socket.addEventListener("open", () => {
   console.log("Connected to Server ✅");
 });
@@ -19,23 +23,19 @@ socket.addEventListener("close", () => {
   console.log("Disconnected from Server 🚫");
 });
 
-setTimeout(() => {
-  socket.send("hello from the browser!");
-}, 5000);
-
-const handleSubmit = (event) => {
+const handleMassageSubmit = (event) => {
   event.preventDefault();
   const input = massageForm.querySelector("input");
-  socket.send(input.value);
+  socket.send(makeMassage("new_massage", input.value));
   input.value = "";
 };
 
 const handleNickSubmit = (event) => {
   event.preventDefault();
   const input = nickForm.querySelector("input");
-  socket.send(input.value);
+  socket.send(makeMassage("nickname", input.value));
   input.value = "";
 };
 
-massageForm.addEventListener("submit", handleSubmit);
+massageForm.addEventListener("submit", handleMassageSubmit);
 nickForm.addEventListener("submit", handleNickSubmit);
