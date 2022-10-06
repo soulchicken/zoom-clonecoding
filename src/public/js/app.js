@@ -1,41 +1,64 @@
-const messageList = document.querySelector("ul");
-const massageForm = document.querySelector("#message");
-const nickForm = document.querySelector("#nick");
+const socket = io();
 
-const socket = new WebSocket(`ws://${window.location.host}`);
+const welcome = document.getElementById("welcome");
+const form = welcome.querySelector("form");
 
-const makeMassage = (type, payload) => {
-  return JSON.stringify({ type, payload });
+const room = document.getElementById("room");
+room.hidden = true;
+
+let roomName;
+
+const addMassage = (message) => {
+  const ul = room.querySelector("ul");
+  const li = document.createElement("li");
+  li.innerText = message;
+  ul.appendChild(li);
 };
 
-socket.addEventListener("open", () => {
-  console.log("Connected to Server ✅");
-});
+const showRoom = () => {
+  room.hidden = false;
+  welcome.hidden = true;
+  const h3 = room.querySelector("h3");
+  h3.innerText = `Room ${roomName}`;
 
-socket.addEventListener("message", (message) => {
-  const li = document.createElement("li");
-  li.innerText = message.data;
-  messageList.append(li);
-  console.log("New massage : ", message.data);
-});
-
-socket.addEventListener("close", () => {
-  console.log("Disconnected from Server 🚫");
-});
+  const msgForm = room.querySelector("#msg");
+  const nameForm = room.querySelector("#name");
+  msgForm.addEventListener("submit", handleMassageSubmit);
+  nameForm.addEventListener("submit", handleNicknameSubmit);
+};
 
 const handleMassageSubmit = (event) => {
   event.preventDefault();
-  const input = massageForm.querySelector("input");
-  socket.send(makeMassage("new_massage", input.value));
-  input.value = "";
+  const input = room.querySelector("#msg input");
+  const value = input.value;
+  socket.emit("new_massage", input.value, roomName, () => {
+    addMassage(`You: ${value}`);
+  });
 };
 
-const handleNickSubmit = (event) => {
+const handleNicknameSubmit = (event) => {
   event.preventDefault();
-  const input = nickForm.querySelector("input");
-  socket.send(makeMassage("nickname", input.value));
+  const input = room.querySelector("#name input");
+  const value = input.value;
+  socket.emit("nickname", input.value);
+};
+
+const handleRoomSubmit = (event) => {
+  event.preventDefault();
+  const input = form.querySelector("input");
+  socket.emit("enter_room", input.value, showRoom);
+  roomName = input.value;
   input.value = "";
 };
 
-massageForm.addEventListener("submit", handleMassageSubmit);
-nickForm.addEventListener("submit", handleNickSubmit);
+form.addEventListener("submit", handleRoomSubmit);
+
+socket.on("welcome", (user) => {
+  addMassage(`${user} arrived!`);
+});
+
+socket.on("bye", (left) => {
+  addMassage(`${left} someone left ㅜㅜ`);
+});
+
+socket.on("new_massage", addMassage);
